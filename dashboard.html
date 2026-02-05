@@ -1,0 +1,515 @@
+ <!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard SAKO-MART</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Poppins', sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f7f6; overflow: hidden; }
+    
+    /* SIDEBAR */
+    .sidebar { width: 280px; background: #2E7D32; color: white; padding: 30px 20px; box-sizing: border-box; flex-shrink: 0; }
+    .sidebar h2 { display: flex; align-items: center; gap: 12px; white-space: nowrap; margin-top: 0; font-size: 22px; }
+    .sidebar ul { list-style: none; padding: 0; margin-top: 40px; }
+    .sidebar li { cursor: pointer; padding: 12px; border-radius: 8px; margin-bottom: 10px; transition: 0.3s; display: flex; align-items: center; gap: 10px; }
+    .sidebar li:hover { background: rgba(255,255,255,0.1); }
+
+    /* CONTENT AREA - INI GUE UBAH BIAR GAK MELEDAK */
+    .main-content { flex: 1; padding: 30px; overflow-y: auto; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px solid #ddd; padding-bottom: 15px; }
+
+    /* LAYOUT KHUSUS TRANSAKSI - INI KUNCI BIAR RAPI */
+    .transaksi-layout { display: flex; gap: 20px; align-items: flex-start; }
+    .transaksi-kiri { flex: 1; min-width: 0; } /* Biar tabel gak nendang keluar */
+    .transaksi-kanan { width: 380px; position: sticky; top: 0; }
+
+    /* CARD SYSTEM */
+    .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    
+    /* TABLE STYLE */
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th { background: #2E7D32; color: white; padding: 12px; text-align: left; }
+    td { padding: 12px; border-bottom: 1px solid #eee; }
+
+    /* BUTTONS & INPUT */
+    .btn-logout { background: #d32f2f; color: white; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; }
+    .btn-simpan { background: #2E7D32; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    
+    /* Biar input gak 'offside' keluar kotak */
+    input, select { box-sizing: border-box; } 
+
+    /* Tambahkan ini di paling bawah style lo */
+.card input, .card select { 
+    box-sizing: border-box; 
+    width: 100%; 
+}
+</style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="white"><path d="M17 6h-2V5c0-1.65-1.35-3-3-3S9 3.35 9 5v1H7c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM12 4c.55 0 1 .45 1 1v1h-2V5c0-.55.45-1 1-1zm5 15H7V8h10v11z"/></svg>
+            <span>SAKO-MART</span>
+        </h2>
+        <p style="opacity: 0.7; font-size: 13px;">Sistem Kasir v1.0</p>
+        <ul>
+            <li onclick="bukaHalaman('dashboard')">📊 Dashboard</li>
+            <li onclick="bukaHalaman('produk')">📦 Management Produk</li>
+            <li onclick="bukaHalaman('pelanggan')">👥 Management Pelanggan</li>
+            <li onclick="bukaHalaman('transaksi')">🛒 Transaksi Penjualan</li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1 id="judul-halaman">Dashboard</h1>
+            <button class="btn-logout" onclick="window.location.href='/'">Keluar</button>
+        </div>
+
+        <div id="menu-dashboard" class="halaman-konten">
+            <div class="stats-grid">
+                <div class="card">
+                    <h3>Total Produk</h3>
+                    <p id="stat-total-produk" style="font-size: 24px; font-weight: bold;">...</p>
+                </div>
+                <div class="card">
+                    <h3>Transaksi Hari Ini</h3>
+                    <p id="stat-transaksi-hari" style="font-size: 24px; font-weight: bold;">...</p>
+                </div>
+                <div class="card">
+                    <h3>Stok Tipis</h3>
+                    <p id="stat-stok-tipis" style="font-size: 24px; font-weight: bold; color: #d32f2f;">...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="menu-produk" class="halaman-konten" style="display:none;">
+            <div class="card">
+                <h3>Tambah Produk Baru</h3>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="namaBaru" placeholder="Nama Produk" style="flex: 2; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                    <input type="number" id="hargaBaru" placeholder="Harga" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                    <input type="number" id="stokBaru" placeholder="Stok" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                    <button class="btn-simpan" onclick="tambahProduk()">+ Simpan</button>
+                </div>
+            </div>
+            <div class="card" style="margin-top: 20px;">
+                <h3>Daftar Stok Produk</h3>
+                <table>
+                    <thead>
+                        <tr><th>Kode</th> <th>Nama Produk</th> <th>Harga</th> <th>Stok</th></tr>
+                    </thead>
+                    <tbody id="tabel-produk"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="menu-pelanggan" class="halaman-konten" style="display:none;">
+            <div class="card">
+                <h3>Daftarkan Member Baru</h3>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="namaPelanggan" placeholder="Nama Lengkap" style="flex: 2; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                    <input type="text" id="telpPelanggan" placeholder="Nomor Telepon" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                    <button class="btn-simpan" onclick="tambahPelanggan()">+ Daftar Member</button>
+                </div>
+            </div>
+            <div class="card" style="margin-top: 20px;">
+                <h3>Daftar Member SAKO-MART</h3>
+                <table>
+                    <thead>
+                        <tr><th>ID</th> <th>Nama Pelanggan</th> <th>Nomor Telepon</th> <th>Poin Belanja</th></tr>
+                    </thead>
+                    <tbody id="tabel-pelanggan"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="menu-transaksi" class="halaman-konten" style="display:none;">
+            <div style="display: grid; grid-template-columns: 1fr 380px; gap: 20px; align-items: start;">
+                
+                <div class="card">
+                    <h3>Keranjang Belanja</h3> 
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <input type="text" id="inputKode" placeholder="Masukkan Kode Barang" style="flex: 2; padding: 10px;" onkeypress="if(event.key === 'Enter') tambahKeKeranjang()">
+                        <input type="number" id="inputJumlah" value="1" style="flex: 0.5; padding: 10px;">
+                        <button class="btn-simpan" onclick="tambahKeKeranjang()">Tambah</button>
+                    </div>
+                    <table style="width: 100%;">
+                        <thead>
+                            <tr><th>Barang</th> <th>Harga</th> <th>Jumlah</th> <th>Subtotal</th> <th></th></tr>
+                        </thead>
+                        <tbody id="tabel-keranjang"></tbody> 
+                    </table>
+
+                    <div style="margin-top: 30px;">
+                        <h3>Riwayat Transaksi Terakhir</h3>
+                        <table style="width: 100%;">
+                            <thead>
+                                <tr style="background: #2E7D32; color: white;">
+                                    <th>Waktu</th> <th>Pembeli</th> <th>Total Belanja</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabel-riwayat"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card" style="display: flex; flex-direction: column; gap: 15px; height: fit-content; position: sticky; top: 10px;">
+                    <h3 style="margin: 0; padding-bottom: 10px; border-bottom: 2px solid #2E7D32;">Pembayaran</h3>
+                    <div>
+                        <label style="font-weight: bold;">Pilih Member:</label>
+                        <select id="pilihMember" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;"></select>
+                    </div>
+                    <div style="background: #f1f8e9; padding: 20px; border-radius: 8px; text-align: center; border: 1px dashed #2E7D32;">
+                        <p style="margin: 0; color: #666;">Total Belanja:</p>
+                        <h2 id="totalHarga" style="margin: 5px 0; color: #2E7D32; font-size: 2rem;">Rp 0</h2>
+                    </div>
+                    <div>
+                        <label style="font-weight: bold;">Uang Bayar:</label>
+                        <input type="number" id="uangBayar" oninput="hitungKembalian()" placeholder="0" style="width: 100%; padding: 12px; border-radius: 5px; border: 1px solid #ccc;">
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: bold;">Kembalian:</span>
+                        <span id="kembalian" style="font-weight: bold; color: #d32f2f; font-size: 1.2rem;">Rp 0</span>
+                    </div>
+                    <button onclick="prosesBayar()" style="width: 100%; background: #2E7D32; color: white; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1.1rem;">
+                        BAYAR SEKARANG
+                    </button>
+                </div>
+
+            </div> </div> </div> </body>
+
+    <script>
+        // 1. VARIABEL GLOBAL
+let keranjang = [];
+let totalBelanja = 0;
+
+// 2. FUNGSI NAVIGASI UTAMA
+function bukaHalaman(namaHalaman) {
+    // Sembunyikan semua halaman
+    document.querySelectorAll('.halaman-konten').forEach(div => {
+        div.style.display = 'none';
+    });
+
+    // Tampilkan halaman tujuan
+    const elementTujuan = document.getElementById('menu-' + namaHalaman);
+    if (elementTujuan) {
+        elementTujuan.style.display = 'block';
+    }
+
+    // Ganti Judul
+    const daftarJudul = {
+        'dashboard': 'Dashboard Statistik',
+        'produk': 'Management Produk',
+        'pelanggan': 'Data Pelanggan',
+        'transaksi': 'Kasir SAKO-MART'
+    };
+    const elemenJudul = document.getElementById('judul-halaman');
+    if (elemenJudul && daftarJudul[namaHalaman]) {
+        elemenJudul.innerText = daftarJudul[namaHalaman];
+    }
+
+    // Trigger muat data sesuai halaman
+    if (namaHalaman === 'produk') {
+        muatProduk();
+    } else if (namaHalaman === 'pelanggan') {
+        muatPelanggan();
+    } else if (namaHalaman === 'transaksi') {
+        muatMemberKasir();
+        muatRiwayat();
+    }
+}
+
+// 3. FUNGSI PRODUK
+async function muatProduk() {
+    const response = await fetch('/api/produk');
+    const data = await response.json();
+    const tabel = document.getElementById('tabel-produk');
+    if (!tabel) return;
+    tabel.innerHTML = '';
+    data.forEach(p => {
+        tabel.innerHTML += `
+            <tr>
+                <td><strong>${p.kode || '-'}</strong></td>
+                <td>${p.nama}</td>
+                <td>Rp ${p.harga.toLocaleString()}</td>
+                <td>${p.stok}</td>
+            </tr>`;
+    });
+}
+
+async function tambahProduk() {
+    const nama = document.getElementById('namaBaru').value;
+    const harga = document.getElementById('hargaBaru').value;
+    const stok = document.getElementById('stokBaru').value;
+
+    await fetch('/api/produk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nama, harga, stok })
+    });
+    
+    alert('Berhasil disimpan!');
+    muatProduk();
+    document.getElementById('namaBaru').value = '';
+    document.getElementById('hargaBaru').value = '';
+    document.getElementById('stokBaru').value = '';
+}
+
+// 4. FUNGSI PELANGGAN
+async function muatPelanggan() {
+    const response = await fetch('/api/pelanggan');
+    const data = await response.json();
+    const tabel = document.getElementById('tabel-pelanggan');
+    if (!tabel) return;
+    tabel.innerHTML = '';
+    data.forEach(p => {
+        tabel.innerHTML += `<tr><td>${p.id}</td><td>${p.nama}</td><td>${p.telepon}</td><td>${p.poin}</td></tr>`;
+    });
+}
+
+async function tambahPelanggan() {
+    const nama = document.getElementById('namaPelanggan').value;
+    const telp = document.getElementById('telpPelanggan').value;
+    if(!nama || !telp) return alert("Isi data dengan lengkap!");
+    await fetch('/api/pelanggan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nama: nama, telepon: telp })
+    });
+    alert('Member Berhasil Didaftarkan!');
+    muatPelanggan();
+    document.getElementById('namaPelanggan').value = '';
+    document.getElementById('telpPelanggan').value = '';
+}
+
+// 5. FUNGSI KASIR & TRANSAKSI
+async function muatMemberKasir() {
+    const response = await fetch('/api/pelanggan');
+    const data = await response.json();
+    const select = document.getElementById('pilihMember');
+    if (!select) return;
+    select.innerHTML = '<option value="">-- Bukan Member --</option>';
+    data.forEach(p => {
+        select.innerHTML += `<option value="${p.id}">${p.nama}</option>`;
+    });
+}
+
+async function tambahKeKeranjang() {
+    console.log("Fungsi tambahKeKeranjang dipanggil");
+
+    const inputElemen = document.getElementById('inputKode');
+    const kodeInput = inputElemen.value.trim();
+    const jumlahInput = parseInt(document.getElementById('inputJumlah').value) || 1;
+
+    if (!kodeInput) return alert("Masukkan kode barang!");
+
+    // Cek apakah user di halaman transaksi
+    const menuTransaksi = document.getElementById('menu-transaksi');
+    if (!menuTransaksi || menuTransaksi.style.display === 'none') {
+        bukaHalaman('transaksi');
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    try {
+        // Tetap ambil data dari server biar akurat
+        const response = await fetch('/api/produk');
+        const daftarProduk = await response.json();
+
+        // Cari produk berdasarkan kode
+        const produk = daftarProduk.find(p => parseInt(p.kode) == parseInt(kodeInput));
+        
+        if (produk) {
+            const subtotal = produk.harga * jumlahInput;
+
+            // --- PERBAIKAN CEGAH DUPLIKASI DI SINI ---
+            // Cek apakah produk dengan kode yang sama sudah ada di keranjang
+            const itemSudahAda = keranjang.find(item => parseInt(item.kode) === parseInt(produk.kode));
+
+            if (itemSudahAda) {
+                // Jika ada, cukup tambahkan jumlah dan update subtotalnya saja
+                itemSudahAda.jumlah += jumlahInput;
+                itemSudahAda.subtotal = itemSudahAda.harga * itemSudahAda.jumlah;
+            } else {
+                // Jika belum ada, baru masukkan sebagai item baru
+                keranjang.push({
+                    kode: produk.kode,
+                    nama: produk.nama,
+                    harga: produk.harga,
+                    jumlah: jumlahInput,
+                    subtotal: subtotal
+                });
+            }
+
+            // Update variabel totalBelanja agar sinkron dengan kotak hijau
+            totalBelanja += subtotal; 
+            // -----------------------------------------
+
+            updateTabelKeranjang();
+            
+            // Reset input field
+            inputElemen.value = '';
+            document.getElementById('inputJumlah').value = '1';
+            inputElemen.focus();
+        } else {
+            alert(`Produk dengan kode "${kodeInput}" tidak ditemukan!`);
+        }
+    } catch (error) {
+        console.error("Gagal memanggil data server:", error);
+        alert("Terjadi kesalahan koneksi ke server!");
+    }
+}
+
+function hapusItem(index) {
+    // 1. Buang barang dari daftar array
+    keranjang.splice(index, 1);
+    
+    // 2. Hitung ulang totalBelanja dari nol supaya tidak minus
+    totalBelanja = keranjang.reduce((sum, item) => sum + item.subtotal, 0);
+    
+    // 3. Update tampilan tabel dan total
+    updateTabelKeranjang();
+    
+    // 4. Update kembalian
+    if (typeof hitungKembalian === "function") hitungKembalian();
+}
+
+function updateTabelKeranjang() {
+    const tabel = document.getElementById('tabel-keranjang');
+    tabel.innerHTML = ''; // Bersihkan tabel lama
+    
+    keranjang.forEach((item, index) => {
+        tabel.innerHTML += `
+            <tr>
+                <td>${item.nama}</td>
+                <td>Rp ${item.harga.toLocaleString()}</td>
+                <td>${item.jumlah}</td>
+                <td>Rp ${item.subtotal.toLocaleString()}</td>
+                <td style="text-align: center;">
+                    <span onclick="hapusItem(${index})" 
+                          style="color: #ff4d4d; cursor: pointer; font-size: 1.2rem; font-weight: bold;">
+                        &times;
+                    </span>
+                </td>
+            </tr>`;
+    });
+    
+    // Update angka Total Belanja di kotak hijau
+    document.getElementById('totalHarga').innerText = `Rp ${totalBelanja.toLocaleString()}`;
+}
+
+function hitungKembalian() {
+    const uangBayar = parseInt(document.getElementById('uangBayar').value) || 0;
+    const kembalianElemen = document.getElementById('kembalian');
+    
+    const hasilKembalian = uangBayar - totalBelanja;
+
+    if (hasilKembalian < 0) {
+        kembalianElemen.innerText = `Rp 0 (Kurang Rp ${Math.abs(hasilKembalian).toLocaleString()})`;
+        kembalianElemen.style.color = "red";
+    } else {
+        kembalianElemen.innerText = `Rp ${hasilKembalian.toLocaleString()}`;
+        kembalianElemen.style.color = "#2E7D32"; // Hijau kalau cukup
+    }
+}
+
+async function prosesBayar() {
+    // 1. Validasi Keranjang
+    if (keranjang.length === 0) return alert("Keranjang masih kosong!");
+    
+    // 2. Ambil nilai uang bayar
+    const inputUang = document.getElementById('uangBayar').value;
+    if (!inputUang) return alert("Masukkan jumlah uang bayar!");
+    
+    const uangBayar = parseInt(inputUang);
+
+    // --- TAMBAHKAN VALIDASI NOMINAL DI SINI ---
+    if (uangBayar < totalBelanja) {
+        const kurang = totalBelanja - uangBayar;
+        return alert(`❌ Uang bayar kurang Rp ${kurang.toLocaleString()}!`);
+    }
+    // ------------------------------------------
+
+    const response = await fetch('/api/transaksi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            keranjang: keranjang,
+            idPelanggan: document.getElementById('pilihMember').value,
+            totalBelanja: totalBelanja,
+            uangBayar: uangBayar, // Opsional: kirim info uang bayar ke server
+            kembalian: uangBayar - totalBelanja // Opsional: kirim info kembalian
+        })
+    });
+
+    const hasil = await response.json();
+    if (hasil.success) {
+        alert("✅ Transaksi Berhasil!");
+        
+        // RESET SEMUA SETELAH BERHASIL
+        keranjang = [];
+        totalBelanja = 0; // Pastikan total belanja balik ke 0
+        document.getElementById('uangBayar').value = '';
+        document.getElementById('kembalian').innerText = 'Rp 0'; // Reset teks kembalian
+        
+        updateTabelKeranjang();
+        muatRiwayat();
+        muatProduk(); 
+    } else { 
+        alert("❌ Transaksi Gagal: " + (hasil.message || "Terjadi kesalahan server")); 
+    }
+}
+
+async function muatRiwayat() {
+    const res = await fetch('/api/riwayat');
+    const data = await res.json();
+    const tabel = document.getElementById('tabel-riwayat');
+    if (!tabel) return;
+    tabel.innerHTML = '';
+    data.reverse().forEach(t => {
+        tabel.innerHTML += `<tr><td>${t.waktu || t.tanggal}</td><td>${t.pembeli}</td><td><strong>Rp ${t.total.toLocaleString()}</strong></td></tr>`;
+    });
+}
+
+// Jalankan saat pertama kali buka
+muatProduk();
+muatStatistik();
+
+// 6. REAL-TIME SYNC (Polling setiap 3 detik)
+setInterval(() => {
+    // Cek apakah user sedang mengetik di form? (Opsional: skip jika sedang input)
+    const activeElement = document.activeElement;
+    const isInput = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'SELECT');
+    
+    // Hanya refresh data tabel/stats, jangan ganggu input user
+    if (!isInput) {
+        muatStatistik();
+        // muatProduk(); // Di-disable dulu biar gak flicker pas user liat tabel, atau user request nanti
+        // muatRiwayat();
+    }
+    // Tapi user minta "semua data transaksi, jumlah produk, jumlah stok"
+    // Jadi kita harus refresh semuanya, tapi hati-hati UX.
+    // Kita refresh saja, browser modern cukup cepat menangani DOM diffing sederhana.
+    muatProduk();
+    muatRiwayat();
+}, 3000);
+
+async function muatStatistik() {
+    try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+        
+        // Update Card Total Produk (Tampilkan Jenis & Total Fisik)
+        document.getElementById('stat-total-produk').innerHTML = 
+            `${data.totalProduk} Jenis <span style="font-size:14px; font-weight:normal;">(Total Stok: ${data.totalStok})</span>`;
+            
+        document.getElementById('stat-transaksi-hari').innerText = data.transaksiHariIni + " Transaksi";
+        document.getElementById('stat-stok-tipis').innerText = data.stokTipis + " Barang";
+    } catch (e) {
+        console.error("Gagal muat statistik:", e);
+    }
+}
+    </script>
+</body>
+</html>
