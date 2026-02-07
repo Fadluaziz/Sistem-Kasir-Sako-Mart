@@ -1,4 +1,4 @@
--- Tabel Produk
+-- TABEL PRODUK
 CREATE TABLE product (
     id SERIAL PRIMARY KEY,
     nama_barang VARCHAR(255),
@@ -6,7 +6,7 @@ CREATE TABLE product (
     stok INTEGER
 );
 
--- Tabel Transaksi
+-- TABEL TRANSAKSI
 CREATE TABLE transaction (
     id SERIAL PRIMARY KEY,
     total_harga INTEGER,
